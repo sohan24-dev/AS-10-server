@@ -31,10 +31,86 @@ async function run() {
         const database = client.db("AS_10");
         const LaywerData = database.collection("laywerData");
         const comments = database.collection('comments')
+        const users = database.collection('user')
+        const hirelawyers = database.collection('hirelawyers')
+
+        // all Users 
+        app.get("/user", async (req, res) => {
+
+            const result = await users.find().toArray();
+            res.send(result);
+        });
+
+        // Delete User 
+        app.delete("/user/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await users.deleteOne(query);
+            res.send(result);
+        });
+
+        // UpDate User Role 
+        app.patch("/user/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const updatedData = req.body;
+
+                console.log("ID:", id);
+                console.log("Body:", updatedData);
+
+                const result = await users.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: updatedData }
+                );
+
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ error: "Update failed" });
+            }
+        });
         // comment data 
         app.post("/comment", async (req, res) => {
             const comment = req.body;
             const result = await comments.insertOne(comment);
+            res.send(result);
+        });
+
+        //laywer post 
+
+        // app.post("/hirelawyer", async (req, res) => {
+        //     const hirelawyer = req.body;
+        //     const result = await hirelawyers.insertOne(hirelawyer);
+        //     res.send(result);
+        // });
+
+        app.post("/hirelawyer", async (req, res) => {
+            const hireData = req.body;
+
+            const existingHire = await hirelawyers.findOne({
+                clientEmail: hireData.clientEmail,
+                lawyerEmail: hireData.lawyerEmail,
+            });
+
+            if (existingHire) {
+                return res.status(400).json({
+                    success: false,
+                    message: "You have already hired this lawyer",
+                });
+            }
+
+            const result = await hirelawyers.insertOne(hireData);
+
+            res.status(201).json({
+                success: true,
+                insertedId: result.insertedId,
+            });
+        });
+
+        // get hirelawyers
+        app.get("/hirelawyer", async (req, res) => {
+
+            const result = await hirelawyers.find().toArray();
             res.send(result);
         });
 
