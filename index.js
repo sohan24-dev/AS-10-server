@@ -114,6 +114,23 @@ async function run() {
             res.send(result);
         });
 
+        // Update hirelawyer 
+        app.patch("/hirelawyer/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const updatedData = req.body;
+
+                const result = await hirelawyers.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: updatedData }
+                );
+
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: "Update failed" });
+            }
+        });
+
         // get comment 
         app.get("/comment", async (req, res) => {
 
@@ -149,8 +166,29 @@ async function run() {
 
         // laywerData 
         app.get("/alllaywer", async (req, res) => {
+            const search = req.query.search || "";
 
-            const result = await LaywerData.find().toArray();
+            const query = search
+                ? {
+                    $or: [
+                        {
+                            name: {
+                                $regex: search,
+                                $options: "i",
+                            },
+                        },
+                        {
+                            specialization: {
+                                $regex: search,
+                                $options: "i",
+                            },
+                        },
+                    ],
+                }
+                : {};
+
+            const result = await LaywerData.find(query).toArray();
+
             res.send(result);
         });
         // updateOne
