@@ -16,7 +16,7 @@ app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGODB_URI;
-
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
@@ -26,6 +26,39 @@ const client = new MongoClient(uri, {
     }
 });
 
+const JWKS = createRemoteJWKSet(
+    new URL(process.env.BASE_URL + "/api/auth/jwks")
+)
+
+const verifyToken = async (req, res, next) => {
+    const authheader = req?.headers.authorization;
+    if (!authheader) {
+        return res.status(401).json({
+            message: "Unauthrized"
+        });
+    }
+    const token = authheader.split(" ")[1];
+    if (!token) {
+        return res.status(401).json({
+            message: "Unauthrized"
+        });
+    }
+    try {
+        const { payload } = await jwtVerify(token, JWKS)
+        req.user = payload;
+        req.email = payload.email;
+        // console.log(payload);
+        next()
+    } catch (error) {
+        return res.status(403).json({
+            message: "Forbidden"
+        });
+    }
+
+}
+
+
+
 async function run() {
     try {
         const database = client.db("AS_10");
@@ -33,6 +66,75 @@ async function run() {
         const comments = database.collection('comments')
         const users = database.collection('user')
         const hirelawyers = database.collection('hirelawyers')
+
+        const pay = database.collection("pay")
+        app.post("/payment", async (req, res) => {
+            console.log(req.body);
+            try {
+                const {
+                    hireId,
+                    lawyerName,
+                    clientName,
+                    clientEmail,
+                    lawyerEmail,
+                    amount,
+                    stripeSessionId,
+                    paymentIntent,
+                } = req.body;
+
+                // Update hirelawyers collection
+                const updateResult = await hirelawyers.updateOne(
+                    { _id: new ObjectId(hireId) },
+                    {
+                        $set: {
+                            paymentStatus: "paid",
+                            status: "paid",
+                            pay: "paid",
+                            paidAt: new Date(),
+                            stripeSessionId,
+                        },
+                    }
+                );
+
+                // Create payment history
+                const paymentResult = await pay.insertOne({
+                    hireId,
+                    lawyerName,
+                    clientName,
+                    clientEmail,
+                    lawyerEmail,
+                    amount,
+                    stripeSessionId,
+                    paymentIntent,
+                    paymentStatus: "paid",
+                    paidAt: new Date(),
+                    createdAt: new Date(),
+                });
+
+                res.send({
+                    success: true,
+                    updateResult,
+                    paymentResult,
+                });
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({
+                    success: false,
+                    message: error.message,
+                });
+            }
+        });
+
+        // app.patch("/payment", async (req, res) => {
+        //     try {
+        //         console.log(req.body);
+
+        //         res.send({});
+        //     } catch (error) {
+        //         res.status(500).send({ error: "Update failed" });
+        //     }
+        // });
+
 
         // all Users 
         app.get("/user", async (req, res) => {
@@ -208,7 +310,7 @@ async function run() {
             }
         });
         // getdetails
-        app.get("/alllaywer/:id", async (req, res) => {
+        app.get("/alllaywer/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await LaywerData.findOne(query)
