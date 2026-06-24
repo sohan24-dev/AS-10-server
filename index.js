@@ -267,8 +267,40 @@ async function run() {
 
 
         // laywerData 
+        // app.get("/alllaywer", async (req, res) => {
+        //     const search = req.query.search || "";
+
+        //     const query = search
+        //         ? {
+        //             $or: [
+        //                 {
+        //                     name: {
+        //                         $regex: search,
+        //                         $options: "i",
+        //                     },
+        //                 },
+        //                 {
+        //                     specialization: {
+        //                         $regex: search,
+        //                         $options: "i",
+        //                     },
+        //                 },
+        //             ],
+        //         }
+        //         : {};
+
+        //     const result = await LaywerData.find(query).toArray();
+
+        //     res.send(result);
+        // });
+
+
         app.get("/alllaywer", async (req, res) => {
             const search = req.query.search || "";
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 9;
+
+            const skip = (page - 1) * limit;
 
             const query = search
                 ? {
@@ -289,9 +321,19 @@ async function run() {
                 }
                 : {};
 
-            const result = await LaywerData.find(query).toArray();
+            const totalLawyers = await LaywerData.countDocuments(query);
 
-            res.send(result);
+            const lawyers = await LaywerData.find(query)
+                .skip(skip)
+                .limit(limit)
+                .toArray();
+
+            res.send({
+                lawyers,
+                totalLawyers,
+                totalPages: Math.ceil(totalLawyers / limit),
+                currentPage: page,
+            });
         });
         // updateOne
         app.patch("/alllaywer/:id", async (req, res) => {
