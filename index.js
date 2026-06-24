@@ -92,14 +92,6 @@ async function run() {
                     stripeSessionId,
                     paymentIntent,
                 } = req.body;
-                console.log(hireId,
-                    lawyerName,
-                    clientName,
-                    clientEmail,
-                    lawyerEmail,
-                    amount,
-                    stripeSessionId,
-                    paymentIntent,);
 
                 // Check existing payment
                 const existingPayment = await pay.findOne({
@@ -154,15 +146,6 @@ async function run() {
             }
         });
 
-        // app.patch("/payment", async (req, res) => {
-        //     try {
-        //         console.log(req.body);
-
-        //         res.send({});
-        //     } catch (error) {
-        //         res.status(500).send({ error: "Update failed" });
-        //     }
-        // });
 
 
         // all Users 
