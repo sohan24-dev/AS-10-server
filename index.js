@@ -69,14 +69,19 @@ async function run() {
 
         const pay = database.collection("pay")
 
-        // app.get("/pay", async (req, res) => {
+        app.get("/pay", async (req, res) => {
 
-        //     const result = await pay.find().toArray();
-        //     res.send(result);
-        // });
+            const result = await pay.find().toArray();
+            res.send(result);
+        });
 
         app.post("/payment", async (req, res) => {
+            const {
+                stripeSessionId,
+                paymentIntent,
+            } = req.body;
             try {
+
                 const {
                     hireId,
                     lawyerName,
@@ -87,6 +92,14 @@ async function run() {
                     stripeSessionId,
                     paymentIntent,
                 } = req.body;
+                console.log(hireId,
+                    lawyerName,
+                    clientName,
+                    clientEmail,
+                    lawyerEmail,
+                    amount,
+                    stripeSessionId,
+                    paymentIntent,);
 
                 // Check existing payment
                 const existingPayment = await pay.findOne({
@@ -101,18 +114,18 @@ async function run() {
                 }
 
                 // Update hire
-                await hirelawyers.updateOne(
+                const updateResult = await hirelawyers.updateOne(
                     { _id: new ObjectId(hireId) },
                     {
                         $set: {
                             paymentStatus: "paid",
-                            status: "paid",
                             pay: "paid",
                             paidAt: new Date(),
-                            stripeSessionId,
                         },
                     }
                 );
+
+                // console.log(updateResult);
 
                 // Insert payment history only once
                 const paymentResult = await pay.insertOne({
@@ -198,67 +211,14 @@ async function run() {
 
         app.post("/hirelawyer", async (req, res) => {
             const hirelawyer = req.body;
+            // console.log(hirelawyer, "hirelaywer");
             const result = await hirelawyers.insertOne(hirelawyer);
             res.send(result);
         });
 
-        app.post("/hirelawyer", async (req, res) => {
-            const hireData = req.body;
-
-            const existingHire = await hirelawyers.findOne({
-                clientEmail: hireData.clientEmail,
-                lawyerEmail: hireData.lawyerEmail,
-            });
-
-            if (existingHire) {
-                return res.status(400).json({
-                    success: false,
-                    message: "You have already hired this lawyer",
-                });
-            }
-
-            const result = await hirelawyers.insertOne(hireData);
-
-            res.status(201).json({
-                success: true,
-                insertedId: result.insertedId,
-            });
-        });
 
 
 
-        // app.post("/hirelawyer", async (req, res) => {
-        //     try {
-        //         const hireData = req.body;
-        //         console.log(hireData._id);
-        //         const existingHire = await hirelawyers.findOne({
-        //             _id: hireData._id,
-        //         });
-
-        //         if (existingHire) {
-        //             return res.status(400).json({
-        //                 success: false,
-        //                 message: "Already applied",
-        //             });
-        //         }
-
-        //         const result = await hirelawyers.insertOne(hireData);
-        //         console.log(result);
-        //         res.status(201).json({
-        //             success: true,
-        //             insertedId: result.insertedId,
-        //             message: "Lawyer hired successfully",
-        //         });
-
-        //     } catch (error) {
-        //         console.error(error);
-
-        //         res.status(500).json({
-        //             success: false,
-        //             message: "Something went wrong",
-        //         });
-        //     }
-        // });
 
 
         // get hirelawyers
@@ -278,15 +238,15 @@ async function run() {
                 }
 
                 const updatedData = req.body;
-
+                console.log(updatedData);
                 const result = await hirelawyers.updateOne(
                     { _id: new ObjectId(id) },
                     { $set: updatedData }
                 );
-                console.log(result);
+                // console.log(result);
                 res.send(result);
             } catch (error) {
-                console.error(error);
+                // console.error(error);
                 res.status(500).send({ error: "Update failed" });
             }
         });
