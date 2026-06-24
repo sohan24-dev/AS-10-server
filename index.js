@@ -267,7 +267,7 @@ async function run() {
 
 
         // laywerData 
-        // app.get("/alllaywer", async (req, res) => {
+        // app.get("/alllaywers", async (req, res) => {
         //     const search = req.query.search || "";
 
         //     const query = search
@@ -296,44 +296,42 @@ async function run() {
 
 
         app.get("/alllaywer", async (req, res) => {
-            const search = req.query.search || "";
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 9;
+            try {
+                const search = req.query.search || "";
 
-            const skip = (page - 1) * limit;
-
-            const query = search
-                ? {
-                    $or: [
-                        {
-                            name: {
-                                $regex: search,
-                                $options: "i",
+                const query = search
+                    ? {
+                        $or: [
+                            {
+                                name: {
+                                    $regex: search,
+                                    $options: "i",
+                                },
                             },
-                        },
-                        {
-                            specialization: {
-                                $regex: search,
-                                $options: "i",
+                            {
+                                specialization: {
+                                    $regex: search,
+                                    $options: "i",
+                                },
                             },
-                        },
-                    ],
-                }
-                : {};
+                        ],
+                    }
+                    : {};
 
-            const totalLawyers = await LaywerData.countDocuments(query);
+                const lawyers = await LaywerData.find(query).toArray();
 
-            const lawyers = await LaywerData.find(query)
-                .skip(skip)
-                .limit(limit)
-                .toArray();
-
-            res.send({
-                lawyers,
-                totalLawyers,
-                totalPages: Math.ceil(totalLawyers / limit),
-                currentPage: page,
-            });
+                res.send({
+                    success: true,
+                    totalLawyers: lawyers.length,
+                    lawyers,
+                });
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({
+                    success: false,
+                    message: "Failed to fetch lawyers",
+                });
+            }
         });
         // updateOne
         app.patch("/alllaywer/:id", async (req, res) => {
