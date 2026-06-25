@@ -104,7 +104,6 @@ async function run() {
                     });
                 }
 
-                // Update hire
                 const updateResult = await hirelawyers.updateOne(
                     { _id: new ObjectId(hireId) },
                     {
