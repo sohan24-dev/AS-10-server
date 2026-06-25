@@ -147,7 +147,7 @@ async function run() {
 
 
         // all Users 
-        app.get("/user", async (req, res) => {
+        app.get("/user", verifyToken, async (req, res) => {
 
             const result = await users.find().toArray();
             res.send(result);
@@ -192,7 +192,7 @@ async function run() {
 
         app.post("/hirelawyer", async (req, res) => {
             const hirelawyer = req.body;
-            // console.log(hirelawyer, "hirelaywer");
+            console.log(hirelawyer, "hirelaywer");
             const result = await hirelawyers.insertOne(hirelawyer);
             res.send(result);
         });
