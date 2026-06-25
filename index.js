@@ -93,7 +93,6 @@ async function run() {
                     paymentIntent,
                 } = req.body;
 
-                // Check existing payment
                 const existingPayment = await pay.findOne({
                     stripeSessionId,
                 });
